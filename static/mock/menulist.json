@@ -1,0 +1,294 @@
+{
+  "status": 200,
+  "data": [
+    {
+      "id": "1",
+      "name": "任务中心",
+      "sort": 1,
+      "url": "task",
+      "child": [
+        {
+          "id": "11",
+          "name": "任务列表",
+          "sort": 1,
+          "url": "task/list"
+        },
+        {
+          "id": "12",
+          "name": "历史任务",
+          "sort": 2,
+          "url": "task/history"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "name": "资产管理",
+      "sort": 2,
+      "url": "assets",
+      "child": [
+        {
+          "id": "21",
+          "name": "机器初始化",
+          "sort": 1,
+          "url": "assets/init"
+        },
+        {
+          "id": "12",
+          "name": "主机管理",
+          "sort": 2,
+          "url": "assets/host"
+        },
+        {
+          "id": "13",
+          "name": "DB备份",
+          "sort": 3,
+          "url": "assets/backups"
+        },
+        {
+          "id": "14",
+          "name": "日志审计",
+          "sort": 4,
+          "url": "assets/journal"
+        },
+        {
+          "id": "15",
+          "name": "管理用户",
+          "sort": 5,
+          "url": "assets/users"
+        }
+      ]
+    },
+    {
+      "id": "3",
+      "name": "应用管理",
+      "sort": 3,
+      "url": "application",
+      "child": [
+        {
+          "id": "31",
+          "name": "应用部署",
+          "sort": 1,
+          "url": "application/deploy"
+        },
+        {
+          "id": "32",
+          "name": "应用发布",
+          "sort": 2,
+          "url": "application/release"
+        },
+        {
+          "id": "33",
+          "name": "应用更新",
+          "sort": 3,
+          "url": "application/update"
+        },
+        {
+          "id": "34",
+          "name": "应用回滚",
+          "sort": 4,
+          "url": "application/rollback"
+        }
+      ]
+    },
+    {
+      "id": "4",
+      "name": "SQL管理",
+      "sort": 4,
+      "url": "sql",
+      "child": [
+        {
+          "id": "41",
+          "name": "SQL审核",
+          "sort": 1,
+          "url": "sql/examine"
+        },
+        {
+          "id": "42",
+          "name": "SQL优化",
+          "sort": 2,
+          "url": "sql/optimization"
+        }
+      ]
+    },
+    {
+      "id": "5",
+      "name": "发布docker",
+      "sort": 5,
+      "url": "docker",
+      "child": [
+        {
+          "id": "51",
+          "name": "kubernetes发布",
+          "sort": 1,
+          "url": "docker/kubernetes"
+        }
+      ]
+    },
+    {
+      "id": "6",
+      "name": "仓库管理",
+      "sort": 6,
+      "url": "warehouse",
+      "child": [
+        {
+          "id": "61",
+          "name": "Git管理",
+          "sort": 1,
+          "url": "warehouse/git"
+        },
+        {
+          "id": "62",
+          "name": "harbor管理",
+          "sort": 2,
+          "url": "warehouse/harbor"
+        }
+      ]
+    },
+    {
+      "id": "7",
+      "name": "批量操作",
+      "sort": 7,
+      "url": "batch",
+      "child": [
+        {
+          "id": "71",
+          "name": "playbook接口",
+          "sort": 1,
+          "url": "batch/playbook"
+        },
+        {
+          "id": "72",
+          "name": "role接口",
+          "sort": 2,
+          "url": "batch/role"
+        },
+        {
+          "id": "73",
+          "name": "跳板机",
+          "sort": 3,
+          "url": "batch/jump"
+        }
+      ]
+    },
+    {
+      "id": "8",
+      "name": "配置管理",
+      "sort": 8,
+      "url": "configure",
+      "child": [
+        {
+          "id": "81",
+          "name": "配置文件",
+          "sort": 1,
+          "url": "configure/file"
+        },
+        {
+          "id": "82",
+          "name": "应用包",
+          "sort": 2,
+          "url": "configure/app"
+        },
+        {
+          "id": "83",
+          "name": "playbook",
+          "sort": 3,
+          "url": "configure/playbook"
+        },
+        {
+          "id": "84",
+          "name": "role",
+          "sort": 4,
+          "url": "configure/role"
+        },
+        {
+          "id": "85",
+          "name": "k8s-yaml",
+          "sort": 5,
+          "url": "configure/yaml"
+        }
+      ]
+    },
+    {
+      "id": "9",
+      "name": "监控报警",
+      "sort": 9,
+      "url": "monitor",
+      "child": [
+        {
+          "id": "91",
+          "name": "Zabbix",
+          "sort": 1,
+          "url": "monitor/zabbix"
+        },
+        {
+          "id": "92",
+          "name": "Prometheus",
+          "sort": 2,
+          "url": "monitor/prometheus"
+        }
+      ]
+    },
+    {
+      "id": "10",
+      "name": "定时任务",
+      "sort": 10,
+      "url": "timing",
+      "child": [
+        {
+          "id": "101",
+          "name": "定时列表",
+          "sort": 1,
+          "url": "timing/list"
+        },
+        {
+          "id": "102",
+          "name": "任务日志",
+          "sort": 2,
+          "url": "timing/journal"
+        }
+      ]
+    },
+    {
+      "id": "11",
+      "name": "运维文档",
+      "sort": 11,
+      "url": "operation",
+      "child": [
+        {
+          "id": "111",
+          "name": "故障管理",
+          "sort": 1,
+          "url": "operation/fault"
+        },
+        {
+          "id": "112",
+          "name": "wiki",
+          "sort": 2,
+          "url": "operation/wiki"
+        }
+      ]
+    },
+    {
+      "id": "12",
+      "name": "用户管理",
+      "sort": 12,
+      "url": "users",
+      "child": [
+        {
+          "id": "121",
+          "name": "角色管理",
+          "sort": 1,
+          "url": "users/role"
+        }
+      ]
+    },
+    {
+      "id": "13",
+      "name": "文档",
+      "sort": 12,
+      "url": "file",
+      "child": []
+    }
+  ]
+}
