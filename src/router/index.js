@@ -3,6 +3,9 @@ import Router from 'vue-router'
 import Login from '@/components/ready/login'
 import Home from '@/components/system/homepage'
 import Welcome from '@/components/system/welcome'
+import System_user from '@/components/system/system/user'
+import System_role from '@/components/system/system/role'
+import System_permission from '@/components/system/system/permission'
 import Tack_list from '@/components/system/task/list'
 import Tack_history from '@/components/system/task/history'
 import Assets_init from '@/components/system/assets/init'
@@ -50,6 +53,18 @@ export default new Router({
         {
           path: "/",
           component: Welcome
+        },
+        {
+          path: "/system/user",
+          component: System_user
+        },
+        {
+          path: "/system/role",
+          component: System_role
+        },
+        {
+          path: "/system/permission",
+          component: System_permission
         },
         {
           path: "/task/list",

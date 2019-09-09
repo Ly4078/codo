@@ -4,7 +4,7 @@
       <el-header>
         <div class="title">
           <img src="../../assets/images/jingyu.jpg" alt="管理员头像">
-          codo管理控制台
+          Devops Manage System
         </div>
         <div class="info">
           <span class="el-dropdown-link">{{this.$store.state.userInfo.trueName}}</span>
@@ -325,6 +325,9 @@ export default {
         margin-top: 5px;
       }
     }
+  }
+  .el-submenu{
+    text-align: left;
   }
   // .el-table tbody tr:hover>td { background-color: #0a36b9 }
 }
