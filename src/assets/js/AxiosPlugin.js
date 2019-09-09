@@ -4,11 +4,16 @@ import qs from 'qs'
 import { Message } from "element-ui";
 import router from "./../../router";
 
-var _this = this,errnum=1;
+var _this = this,errnum=1,Url=window.location.origin,_baseURL="/api/";
+if(Url.indexOf("localhost")!=-1){
+  _baseURL="/api/"
+}else{
+  _baseURL=Url+"/"
+}
 export const Axios = axios.create({
   // baseURL: 'https://vp.byn-kj.com/admin/', //生产
   // baseURL:'http://dev.byn-kj.com/admin/', //测试 
-  baseURL: "/api/", //开发
+  baseURL: _baseURL, //开发
   // timeout: 10000
 });
 
