@@ -9,7 +9,7 @@
           clearable
         ></el-input>
         <el-button type="primary" @click="getrole(1)">搜索</el-button>
-        <el-button type="primary">新建</el-button>
+        <el-button type="primary" @click="adddata">新建</el-button>
       </div>
     </div>
     <el-table
@@ -59,6 +59,42 @@
       @handleCurrentChange="handleCurrentChange"
       @handleSizeChange="handleSizeChange"
     ></Pagein>
+
+    <el-dialog
+      title="新建任务"
+      :visible.sync="DialogVisible"
+      :modal-append-to-body="false"
+      top="3%"
+      width="30%"
+      min-width="30%"
+      center
+    >
+      <el-form
+        :model="ruleForm"
+        :rules="rules"
+        ref="ruleForm"
+        label-width="100px"
+        class="demo-ruleForm"
+      >
+        <el-form-item label="job id" prop="job">
+          <el-input v-model="ruleForm.job" clearable placeholder="请输入定时任务ID，建议使用有意义的英文命名，名且不要更改"></el-input>
+        </el-form-item>
+        <el-form-item label="可执行命令" prop="order">
+          <el-input v-model="ruleForm.order" clearable placeholder="请输入要执行的命令，必须为可执行，注意环境变量"></el-input>
+        </el-form-item>
+        <el-form-item label="任务定时器" prop="timer">
+          <el-input
+            v-model="ruleForm.timer"
+            clearable
+            placeholder="定时器，参考linux crontab，（秒 分 时 日 月 周）"
+          ></el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="submitForm('ruleForm')">提交</el-button>
+          <el-button @click="resetForm('ruleForm')">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-dialog>
   </div>
 </template>
 
@@ -71,6 +107,21 @@ export default {
       roleName: "",
       total: 100,
       loading: false,
+      DialogVisible: false,
+      ruleForm: {
+        job: "",
+        order: "",
+        timer: ""
+      },
+      rules: {
+        job: [{ required: true, message: "job id不能为空", trigger: "blur" }],
+        order: [
+          { required: true, message: "可执行命令不能为空", trigger: "blur" }
+        ],
+        timer: [
+          { required: true, message: "任务定时器不能为空", trigger: "blur" }
+        ]
+      },
       userlist: []
     };
   },
@@ -79,6 +130,10 @@ export default {
   },
 
   methods: {
+    //新建任务
+    adddata() {
+      this.DialogVisible = true;
+    },
     //表格翻页
     handleCurrentChange(val) {
       console.log("handleCurrentChange", val);
@@ -90,7 +145,23 @@ export default {
     handleedit(obj) {},
     handledel(obj) {},
     //修改用户状态
-    changestatus(obj) {}
+    changestatus(obj) {},
+    //提交
+    submitForm(formName) {
+      this.$refs[formName].validate(valid => {
+        if (valid) {
+          this.DialogVisible = false;
+          this.$message.success("提交成功");
+        } else {
+          console.log("error submit!!");
+          return false;
+        }
+      });
+    },
+    //重置
+    resetForm(formName) {
+      this.$refs[formName].resetFields();
+    }
   }
 };
 </script>
