@@ -43,7 +43,7 @@
         <el-container>
           <el-main>
             <router-view v-bind:style="{height: this.$store.state.mainHeight}"></router-view>
-            <p>©版权所有-CODO管理系统</p>
+            <p>©版权所有-Devops Manage System</p>
           </el-main>
         </el-container>
       </el-container>
