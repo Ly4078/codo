@@ -3,12 +3,12 @@
     <div class="martop">
       <div class="topleft">
         <el-input
-          v-model="roleName"
-          placeholder="输入关键字全局搜索"
-          @keyup.enter.native="getrole(1)"
+          v-model="search"
+          placeholder="输入主机名搜索"
+          @keyup.enter.native="gethostlist(1)"
           clearable
         ></el-input>
-        <el-button type="primary" @click="getrole(1)">搜索</el-button>
+        <el-button type="primary" @click="gethostlist(1)">搜索</el-button>
       </div>
       <div class="topright">
         <el-button type="primary" icon="el-icon-plus" @click="addhost">添加主机</el-button>
@@ -17,7 +17,7 @@
       </div>
     </div>
     <el-table
-      :data="userlist"
+      :data="hostlist"
       :height="this.$store.state.tableHeight"
       resizable
       border
@@ -28,14 +28,22 @@
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection"></el-table-column>
-      <el-table-column prop="username" align="center" sortable label="主机名"></el-table-column>
-      <el-table-column prop="trueName" align="center" sortable label="IP"></el-table-column>
-      <el-table-column prop="username" align="center" sortable label="内网IP"></el-table-column>
-      <el-table-column prop="trueName" align="center" sortable label="IDC"></el-table-column>
-      <el-table-column prop="username" align="center" sortable label="区域"></el-table-column>
-      <el-table-column prop="trueName" align="center" sortable label="管理用户"></el-table-column>
-      <el-table-column prop="username" align="center" sortable label="状态"></el-table-column>
-      <el-table-column fixed="right" label="操作" align="center">
+      <el-table-column prop="name" align="center" sortable label="主机名"></el-table-column>
+      <el-table-column prop="ip" align="center" sortable label="IP"></el-table-column>
+      <el-table-column prop="in_ip" align="center" sortable label="内网IP"></el-table-column>
+      <el-table-column prop="idc_name" align="center" sortable label="IDC"></el-table-column>
+      <el-table-column prop="user_name" align="center" sortable label="管理用户"></el-table-column>
+      <el-table-column align="center" label="当前状态">
+        <template slot-scope="scope">
+          <el-switch
+            v-model="scope.row.status"
+            @change="changestatus(scope.row)"
+            active-text
+            inactive-text
+          ></el-switch>
+        </template>
+      </el-table-column>
+      <el-table-column fixed="right" label="操作" align="center" width="200">
         <template slot-scope="scope">
           <el-button
             :disabled="!scope.row.status"
@@ -56,6 +64,7 @@
     </el-table>
     <Pagein
       :total="total"
+      :sizes="sizes"
       @handleCurrentChange="handleCurrentChange"
       @handleSizeChange="handleSizeChange"
     ></Pagein>
@@ -77,8 +86,8 @@
         label-width="100px"
         class="demo-ruleForm"
       >
-        <el-form-item label="主机名" prop="host">
-          <el-input v-model="ruleForm.host" clearable placeholder="请输入主机名"></el-input>
+        <el-form-item label="主机名" prop="name">
+          <el-input v-model="ruleForm.name" clearable placeholder="请输入主机名"></el-input>
         </el-form-item>
         <el-form-item label="IP" prop="IP">
           <el-input v-model="ruleForm.IP" clearable placeholder="请输入IP地址"></el-input>
@@ -86,30 +95,24 @@
         <el-form-item label="公网IP">
           <el-input v-model="ruleForm.publicIp" clearable placeholder="公网IP"></el-input>
         </el-form-item>
-        <el-form-item label="端口">
-          <el-input v-model="ruleForm.port" clearable></el-input>
-        </el-form-item>
         <el-form-item label="IDC">
           <el-select v-model="ruleForm.IDC" placeholder="请选择IDC机房">
             <el-option v-for="item in IDCs" :key="item.id" :label="item.label" :value="item.id"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="区域">
-          <el-input v-model="ruleForm.region" clearable placeholder="请输入区域"></el-input>
-        </el-form-item>
         <el-form-item label="管理用户" prop="management">
-          <el-select v-model="ruleForm.management" placeholder="请选择一个管理用户">
+          <el-select v-model="ruleForm.management" placeholder="请选择一个管理用户" @focus="getuserlist">
             <el-option
-              v-for="item in managements"
-              :key="item.id"
-              :label="item.label"
-              :value="item.id"
+              v-for="item in userlist"
+              :key="item.user_id"
+              :label="item.username"
+              :value="item.user_id"
             ></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="标签">
-          <el-select v-model="ruleForm.label" placeholder="请选择关联的标签">
-            <el-option v-for="item in labels" :key="item.id" :label="item.label" :value="item.id"></el-option>
+          <el-select v-model="ruleForm.label" placeholder="请选择关联的标签"  @focus="gettaglist">
+            <el-option v-for="item in taglist" :key="item.id" :label="item.name" :value="item.id"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="备注" prop="desc">
@@ -156,16 +159,20 @@ export default {
   name: "ass_host",
   data() {
     return {
-      roleName: "",
+      search: "",
       total: 0,
+      page: 1,
+      max_page: 3,
       loading: false,
       AddDialogVisible: false,
       batchDialogVisible: false,
       form: {
         textarea2: ""
       },
+      actObj: {},
+      sizes: [3, 4, 5],
       ruleForm: {
-        host: "",
+        name: "",
         IP: "",
         publicIp: "",
         port: "",
@@ -176,12 +183,14 @@ export default {
         desc: ""
       },
       rules: {
-        host: [{ required: true, message: "请输入主机名", trigger: "blur" }],
+        name: [{ required: true, message: "请输入主机名", trigger: "blur" }],
         IP: [{ required: true, message: "请输入IP地址", trigger: "blur" }],
         management: [
           { required: true, message: "请选择管理用户", trigger: "change" }
         ]
       },
+      taglist:[],
+      userlist: [],
       IDCs: [
         {
           id: "001",
@@ -196,45 +205,34 @@ export default {
           label: "IDC3"
         }
       ],
-      managements: [
-        {
-          id: "001",
-          label: "管理用户1"
-        },
-        {
-          id: "002",
-          label: "管理用户2"
-        },
-        {
-          id: "003",
-          label: "管理用户3"
-        }
-      ],
-      labels: [
-        {
-          id: "001",
-          label: "label1"
-        },
-        {
-          id: "002",
-          label: "label2"
-        },
-        {
-          id: "003",
-          label: "label3"
-        }
-      ],
-      userlist: [],
-      dellist: []
+      hostlist: [],
+      multipleSelection: []
     };
   },
   components: {
     Pagein
   },
   methods: {
+    gethostlist(val) {
+      if (val == 1) {
+        this.page = 1;
+      }
+      let _Url = "host/?page=" + this.page + "&max_page=" + this.max_page;
+      this.loading = true;
+      if (this.search) {
+        _Url += "&search=" + this.search;
+      }
+      this.$http.get(_Url).then(res => {
+        this.loading = false;
+        this.total = res.data.data.count;
+        this.hostlist = res.data.data.results;
+      });
+    },
     //表格多选
     handleSelectionChange(val) {
       this.multipleSelection = val;
+
+      console.log("this.multipleSelection:", this.multipleSelection);
     },
     //添加主机
     addhost() {
@@ -246,25 +244,97 @@ export default {
     },
     //批量删除
     batchdel() {
-      if (this.dellist.length) {
+      if (this.multipleSelection.length) {
+        // console.log("multipleSelection:",this.multipleSelection)
+        this.deletedata(1);
       } else {
         this.$message.error("请先选择要删除的数据");
       }
+    },
+    //获取用户列表
+    getuserlist() {
+      if (!this.userlist.length) {
+        this.$http.get("user/").then(res => {
+          console.log(res);
+          if (res && res.status == 200) {
+            if (res.data.status == 0) {
+              this.userlist = res.data.data;
+              console.log("userlist:",this.userlist)
+            }
+          }
+        });
+      }
+    },
+    //获取标签列表
+    gettaglist(){
+      if(!this.taglist.length){
+        this.$http.get("tag/").then(res => {
+          console.log(res);
+          if (res && res.status == 200) {
+            if (res.data.status == 0) {
+              this.taglist = res.data.data;
+              console.log("taglist:",this.taglist)
+            }
+          }
+        });
+      }
+    },
+    //修改用户状态
+    changestatus(obj) {
+      let _status = obj.status ? 1 : 0;
+      let _parms = {
+        status: _status
+      };
+      this.$http.patch("host/" + obj.id + "/", _parms).then(res => {
+        if (res && res.status == 200) {
+          if (res.data.status == 0) {
+            this.$message.success("修改成功");
+          }
+        }
+      });
     },
     //编辑
     handleedit(obj) {
       this.AddDialogVisible = true;
     },
-    //删除
+    //单个删除
     handledel(obj) {
-      console.log("handledel");
+      this.actObj = obj;
+      this.deletedata(2);
+    },
+    //删除数据
+    deletedata(val) {
+      let arrid = [],
+        _Url = "host/",
+        _parms = {};
+      if (val == 1) {
+        //批量删除
+        for (let i in this.multipleSelection) {
+          arrid.push(this.multipleSelection[i].id);
+        }
+      } else if (val == 2) {
+        //单个删除
+        arrid.push(this.actObj.id);
+      }
+      _parms = {
+        pk: arrid
+      };
+
+      this.$http.delete(_Url, { data: _parms }).then(res => {
+        if (res && res.status == 200) {
+          if (res.data.status == 0) {
+            this.$message.success("删除成功");
+            this.gethostlist();
+          }
+        }
+      });
     },
     //提交
     submitForm(formName) {
       this.$refs[formName].validate(valid => {
         if (valid) {
           console.log(formName);
-          if ((formName == "form" && !this.form.textarea2)) {
+          if (formName == "form" && !this.form.textarea2) {
             this.$message.error("请输入相关数据");
           } else {
             this.$message.success("提交成功");
@@ -284,11 +354,18 @@ export default {
     //表格翻页
     handleCurrentChange(val) {
       console.log("handleCurrentChange", val);
+      this.page = val;
+      this.gethostlist();
     },
     //修改每页请求数据条数
     handleSizeChange(val) {
       console.log("handleSizeChange", val);
+      this.max_page = val;
+      this.gethostlist();
     }
+  },
+  created() {
+    this.gethostlist();
   }
 };
 </script>

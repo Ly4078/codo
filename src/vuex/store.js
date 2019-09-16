@@ -16,6 +16,7 @@ const state = {
 const mutations={
     setToken(state, token) {
         state.token = token;
+        sessionStorage.setItem("TOKEN", token);
     },
     setUserInfo(state, data) {
         state.userInfo = data;

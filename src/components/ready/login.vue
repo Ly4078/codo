@@ -66,9 +66,6 @@ export default {
     };
   },
   methods: {
-    handtoken() {
-      this.$store.commit("setToken", this.msg);
-    },
     //点击登陆，校验表单
     submitForm(formName) {
       this.$refs[formName].validate(valid => {
@@ -82,22 +79,25 @@ export default {
     },
     //登录
     login() {
-      let _Url = "login";
-      let _parms = {
-        username: this.ruleForm.username,
-        password: this.ruleForm.password
-      };
-      this.fullScreen();
-      this.$router.push({ path: "/Home", params: {} });
-      return;
+      let _Url = "login/",
+        _parms = {
+          username: this.ruleForm.username,
+          password: this.ruleForm.password
+        };
+      // this.fullScreen();
+      // this.$router.push({ path: "/Home", params: {} });
+      // return;
       this.$http.post(_Url, _parms).then(res => {
-        if (res.status == 200) {
-          this.fullScreen();
+        if (res.data.status == 0) {
+          this.$store.commit("setToken", res.data.results.token);
+          // this.fullScreen();
           this.$store.commit("setUserInfo", res.data);
           this.$router.push({ path: "/Home", params: {} });
         } else {
+          this.ruleForm.username = "";
+          this.ruleForm.password = "";
           this.$message({
-            message: res.response.data,
+            message: res.data.msg,
             duration: 5000,
             showClose: true,
             type: "error"

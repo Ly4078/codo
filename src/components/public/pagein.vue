@@ -2,7 +2,7 @@
   <span class="pagein">
     <el-pagination
       layout="total, sizes, prev, pager, next, jumper"
-      :page-sizes="[10, 30, 50, 100]"
+      :page-sizes="sizes"
       :page-size="10"
       :total="total"
       @size-change="handleSizeChange"
@@ -14,10 +14,10 @@
 export default {
   name: "pagein",
   props: {
-    // sizes: {
-    //     type:Array,
-    //     default:[10, 30, 50, 100]
-    // },
+    sizes: {
+        type:Array,
+        default:[10, 30, 50, 100]
+    },
     // size: {
     //     type:Number,
     //     default:10

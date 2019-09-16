@@ -1,12 +1,9 @@
 
 
-// const BASEURL = "https://vp.byn-kj.com"; //生产服务器
-const BASEURL = "http://dev.byn-kj.com"; //开发-测试服务器
-const QRBASEURL = BASEURL+"/mobile/"; //设备二维码 
+const BASEURL = 'http://115.28.210.128/devops/';
 
 const config = {
-  API: BASEURL,  
-  qrAPI:QRBASEURL
+  API: BASEURL
 };
 export default config;
 // module.exports = config;

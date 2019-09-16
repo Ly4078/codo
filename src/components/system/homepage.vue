@@ -95,7 +95,10 @@
   </div>
 </template>
 
+
 <script>
+
+import _menulist from '../../../static/mock/menulist.json';
 export default {
   name: "home",
   data() {
@@ -176,37 +179,11 @@ export default {
       }
     }
   },
+  mounted(){
+    this.menulist=_menulist.data;
+  },
   methods: {
-    //获取菜单列表
-    getmenulist() {
-      // console.log( window.location)
-      this.$http.get("../../../static/mock/menulist.json").then(res => {
-        console.log(res)
-        let _data =res.data.data;
-        console.log(_data)
-       _data.sort(function(a, b) {
-          if (a.sort < b.sort) {
-            return -1;
-          } else if (a.sort > b.sort) {
-            return 1;
-          }
-          return 0;
-        });
-        for (let i in _data) {
-         _data[i].imgurl='http://dev.byn-kj.com/image/order.png';
-         _data[i].child.sort(function(a, b) {
-            if (a.sort < b.sort) {
-              return -1;
-            } else if (a.sort > b.sort) {
-              return 1;
-            }
-            return 0;
-          });
-        }
-        this.menulist =_data;
-        console.log("menulist:",this.menulist)
-      });
-    },
+  
     handitems(obj) {
       this.$router.push("/" + obj.url);
     },
@@ -261,9 +238,6 @@ export default {
       });
       // this.$router.push({ name: "Login" });
     }
-  },
-  created() {
-    this.getmenulist();
   }
 };
 </script>

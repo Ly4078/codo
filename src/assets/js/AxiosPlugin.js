@@ -4,15 +4,13 @@ import qs from 'qs'
 import { Message } from "element-ui";
 import router from "./../../router";
 
-var _this = this,errnum=1,Url=window.location.origin,_baseURL="/api/";
-if(Url.indexOf("localhost")!=-1){
-  _baseURL="/api/"
-}else{
-  _baseURL=Url+"/"
+var _this = this, errnum = 1, Url = window.location.origin, _baseURL = "/api/";
+if (Url.indexOf("localhost") != -1) {
+  _baseURL = "/api/"
+} else {
+  _baseURL = 'http://115.28.210.128/devops/'
 }
 export const Axios = axios.create({
-  // baseURL: 'https://vp.byn-kj.com/admin/', //生产
-  // baseURL:'http://dev.byn-kj.com/admin/', //测试 
   baseURL: _baseURL, //开发
   // timeout: 10000
 });
@@ -22,23 +20,23 @@ export const Axios = axios.create({
 Axios.interceptors.request.use(
   config => {
     // 设置以 form 表单的形式提交参数，如果以 JSON 的形式提交表单，可忽略
-    const _strs =config.url;
-    if(_strs.indexOf("login") > -1 ){
-      config.data=(qs.stringify(config.data))
+    const _strs = config.url;
+    if (_strs.indexOf("login") > -1) {
+      config.data = (qs.stringify(config.data))
       config.headers = {
         "Content-Type": 'application/x-www-form-urlencoded'
       };
-    }else if (config.method === "post" || config.method === "put") {
+    } else if (config.method === "post" || config.method === "put" || config.method==='delete') {
       config.headers = {
         "Content-Type": "application/json"
       };
-    } else {    
+    }else {
       config.headers = {
         "Content-Type": "application/json;charset=UTF-8"
       };
     }
-    if (localStorage.getItem("TOKEN")) {
-      config.headers.Authorization = localStorage.getItem("TOKEN");
+    if (sessionStorage.getItem("TOKEN")) {
+      config.headers.Authorization = sessionStorage.getItem("TOKEN");
     }
     return config;
   },
@@ -52,19 +50,31 @@ Axios.interceptors.request.use(
 Axios.interceptors.response.use(
   res => {
     //对响应数据做些事
+    console.log("res:",res)
     if (res.status == 200) {
-      return res;
+      if(res.data.status==0){
+          return res;
+      }
+      if(res.data.status==1){
+        Message({
+          duration: 5000,
+          showClose: true,
+          message: res.data.msg,
+          type: "error"
+        });
+      }
     }
   },
   error => {
-    if(errnum==1){
-      errnum=2;
+    console.log("error:",error)
+    if (errnum == 1) {
+      errnum = 2;
       setTimeout(() => {
-        errnum=1;
+        errnum = 1;
       }, 500);
     }
-    
-    if (error.response.status === 401){
+
+    if (error.response.status === 401) {
       Message({
         duration: 5000,
         showClose: true,
@@ -74,7 +84,7 @@ Axios.interceptors.response.use(
       router.push({
         name: "Login"
       });
-    }else if (error.response.status === 403) {
+    } else if (error.response.status === 403) {
       Message({
         duration: 5000,
         showClose: true,
@@ -84,7 +94,7 @@ Axios.interceptors.response.use(
       router.push({
         name: "Login"
       });
-    }else if (error.response.status === 404) {
+    } else if (error.response.status === 404) {
       router.push({
         name: "Login"
       });
@@ -103,7 +113,7 @@ Axios.interceptors.response.use(
         type: "error"
       });
       // Promise.reject("系统异常，稍后重试");
-    }  if (error.response.status === 502 || error.response.status === 503 || error.response.status === 504) {
+    } if (error.response.status === 502 || error.response.status === 503 || error.response.status === 504) {
       Message({
         duration: 5000,
         showClose: true,
