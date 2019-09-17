@@ -134,13 +134,13 @@
       min-width="30%"
       center
     >
-      <p class="prompt">格式: [hostname] [ip] [port] [管理用户] 多台换行分开, 管理用户必须是存在的</p>
+      <p class="prompt">格式: [name] [ip] [user] [tag] [idc] [detail] 多台换行分开, 管理用户必须是存在的</p>
       <el-form ref="form" :model="form" label-width="0px">
         <el-form-item label>
           <el-input
             type="textarea"
             :autosize="{ minRows: 14, maxRows: 30}"
-            placeholder="ops-hostname 10.0.0.1 22 ec2-user"
+            placeholder="[name] [ip] [user] [tag] [idc] [detail]"
             v-model="form.textarea2"
           ></el-input>
         </el-form-item>
