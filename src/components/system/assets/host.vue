@@ -224,7 +224,7 @@ export default {
       search: "",
       total: 0,
       page: 1,
-      max_page: 3,
+      page_size: 3,
       loading: false,
       DialogVisible: false,
       AddDialogVisible: false,
@@ -287,7 +287,7 @@ export default {
       if (val == 1) {
         this.page = 1;
       }
-      let _Url = "host/?page=" + this.page + "&max_page=" + this.max_page;
+      let _Url = "host/?page=" + this.page + "&page_size=" + this.page_size;
       this.loading = true;
       if (this.search) {
         _Url += "&search=" + this.search;
@@ -467,6 +467,25 @@ export default {
                   obj.status = true;
                 }
                 obj.tag = obj.tag.split(",");
+                for(let k in this.userlist){
+                  if(obj.user == this.userlist[k].username){
+                    obj.user=this.user[k].user_id;
+                  }
+                }
+                for(let k in this.idclist){
+                  if(obj.idc == this.idclist[k].label){
+                    obj.idc=this.user[k].id;
+                  }
+                }
+                let tagarr=[];
+                for(let k in this.taglist){
+                  for(let key in obj.tag){
+                    if(key == this.taglist[k].name){
+                      tagarr.push(this.taglist[k].id)
+                    }
+                  }
+                }
+                obj.tag=tagarr;
                 this.objarr.push(obj);
               }
               for (let k in this.objarr) {
@@ -517,7 +536,7 @@ export default {
     },
     //修改每页请求数据条数
     handleSizeChange(val) {
-      this.max_page = val;
+      this.page_size = val;
       this.gethostlist();
     }
   },
