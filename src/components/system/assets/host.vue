@@ -11,6 +11,7 @@
         <el-button type="primary" @click="gethostlist(1)">搜索</el-button>
       </div>
       <div class="topright">
+        <el-button type="primary" @click="inventoryhost">inventory host</el-button>
         <el-button type="primary" icon="el-icon-plus" @click="addhost">添加主机</el-button>
         <el-button type="primary" icon="el-icon-plus" @click="addbatch">批量添加</el-button>
         <el-button type="primary" icon="el-icon-delete" @click="batchdel">批量删除</el-button>
@@ -28,9 +29,18 @@
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection"></el-table-column>
-      <el-table-column prop="name" align="center" sortable label="主机名"></el-table-column>
+      <el-table-column align="center" sortable label="主机名">
+        <template slot-scope="scope">
+          <el-button size="small" @click="handleJoinPeople(scope.row)">{{scope.row.name}}</el-button>
+        </template>
+      </el-table-column>
       <el-table-column prop="ip" align="center" sortable label="IP"></el-table-column>
       <el-table-column prop="in_ip" align="center" sortable label="内网IP"></el-table-column>
+      <el-table-column align="center" label="标签">
+        <template slot-scope="scope">
+          <el-tag v-for="(item,index) in scope.row.tag_name" :key="index">{{item.tag}}</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column prop="idc_name" align="center" sortable label="IDC"></el-table-column>
       <el-table-column prop="user_name" align="center" sortable label="管理用户"></el-table-column>
       <el-table-column align="center" label="当前状态">
@@ -73,6 +83,7 @@
       title="添加主机"
       :visible.sync="AddDialogVisible"
       :modal-append-to-body="false"
+      v-loading="loading"
       top="3%"
       width="30%"
       min-width="30%"
@@ -89,34 +100,41 @@
         <el-form-item label="主机名" prop="name">
           <el-input v-model="ruleForm.name" clearable placeholder="请输入主机名"></el-input>
         </el-form-item>
-        <el-form-item label="IP" prop="IP">
-          <el-input v-model="ruleForm.IP" clearable placeholder="请输入IP地址"></el-input>
+        <el-form-item label="ip" prop="ip">
+          <el-input v-model="ruleForm.ip" clearable placeholder="请输入IP地址"></el-input>
         </el-form-item>
-        <el-form-item label="公网IP">
-          <el-input v-model="ruleForm.publicIp" clearable placeholder="公网IP"></el-input>
-        </el-form-item>
-        <el-form-item label="IDC">
-          <el-select v-model="ruleForm.IDC" placeholder="请选择IDC机房">
-            <el-option v-for="item in IDCs" :key="item.id" :label="item.label" :value="item.id"></el-option>
+        <el-form-item label="idc">
+          <el-select v-model="ruleForm.idc" placeholder="请选择IDC机房" @focus="getidclist">
+            <el-option
+              v-for="item in idclist"
+              :key="item.id+'idc'"
+              :label="item.label"
+              :value="item.id"
+            ></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="管理用户" prop="management">
-          <el-select v-model="ruleForm.management" placeholder="请选择一个管理用户" @focus="getuserlist">
+        <el-form-item label="管理用户" prop="user">
+          <el-select v-model="ruleForm.user" placeholder="请选择一个管理用户" @focus="getuserlist">
             <el-option
               v-for="item in userlist"
-              :key="item.user_id"
+              :key="item.user_id+'user'"
               :label="item.username"
               :value="item.user_id"
             ></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="标签">
-          <el-select v-model="ruleForm.label" placeholder="请选择关联的标签"  @focus="gettaglist">
-            <el-option v-for="item in taglist" :key="item.id" :label="item.name" :value="item.id"></el-option>
+        <el-form-item label="标签" prop="tag">
+          <el-select v-model="ruleForm.tag" multiple placeholder="请选择关联的标签" @focus="gettaglist">
+            <el-option
+              v-for="item in taglist"
+              :key="item.id+'tag'"
+              :label="item.name"
+              :value="item.id"
+            ></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="备注" prop="desc">
-          <el-input type="textarea" v-model="ruleForm.desc" maxlength="255" placeholder="简单描述一下吧"></el-input>
+        <el-form-item label="备注" prop="detail">
+          <el-input type="textarea" v-model="ruleForm.detail" placeholder="简单描述一下吧"></el-input>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="submitForm('ruleForm')">提交</el-button>
@@ -130,11 +148,11 @@
       :visible.sync="batchDialogVisible"
       :modal-append-to-body="false"
       top="3%"
-      width="30%"
-      min-width="30%"
+      v-loading="loading"
+      width="50%"
       center
     >
-      <p class="prompt">格式: [name] [ip] [user] [tag] [idc] [detail] 多台换行分开, 管理用户必须是存在的</p>
+      <p class="prompt">格式: [name] [ip] [user] [tag] [idc] [detail] 多条数据用分号(;)分开, 管理用户(user)必须是存在的</p>
       <el-form ref="form" :model="form" label-width="0px">
         <el-form-item label>
           <el-input
@@ -150,10 +168,54 @@
         </el-form-item>
       </el-form>
     </el-dialog>
+
+    <el-dialog
+      title="主机详情"
+      :visible.sync="DialogVisible"
+      :modal-append-to-body="false"
+      width="40%"
+      center
+    >
+      <el-row>
+        <el-col :span="12">内存：{{detailobj.mem}}</el-col>
+        <el-col :span="12">CPU：{{detailobj.cpus}}</el-col>
+      </el-row>
+      <el-row>
+        <el-col :span="12">系统：{{detailobj.brand}}</el-col>
+        <el-col :span="12">版本：{{detailobj.release}}</el-col>
+      </el-row>
+      <el-row>
+        <el-col :span="12">主机名：{{detailobj.host_name}}</el-col>
+        <el-col :span="12">IP：{{detailobj.host_ip}}</el-col>
+      </el-row>
+      <el-row>
+        <el-col :span="12">管理用户：{{detailobj.host_username}}</el-col>
+        <el-col :span="12">IDC机房：{{detailobj.host_idc}}</el-col>
+      </el-row>
+      <el-row>
+        <el-col :span="24">
+          标签：
+          <el-tag v-for="(item,index) in detailobj.host_tag" :key="index">{{item.tag}}</el-tag>
+        </el-col>
+      </el-row>
+    </el-dialog>
   </div>
 </template>
 
 <script>
+var isValidIP = (rule, value, callback) => {
+  const reg = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/;
+  if (!value) {
+    return callback(new Error("IP地址不能为空"));
+  }
+  setTimeout(() => {
+    if (reg.test(value)) {
+      callback();
+    } else {
+      callback(new Error("IP地址格式错误"));
+    }
+  }, 100);
+};
 import Pagein from "../../public/pagein";
 export default {
   name: "ass_host",
@@ -164,6 +226,7 @@ export default {
       page: 1,
       max_page: 3,
       loading: false,
+      DialogVisible: false,
       AddDialogVisible: false,
       batchDialogVisible: false,
       form: {
@@ -173,38 +236,25 @@ export default {
       sizes: [3, 4, 5],
       ruleForm: {
         name: "",
-        IP: "",
-        publicIp: "",
-        port: "",
-        IDC: "",
-        region: "",
-        management: "",
-        label: "",
-        desc: ""
+        ip: "",
+        idc: "",
+        user: "",
+        tag: [],
+        detail: ""
       },
       rules: {
         name: [{ required: true, message: "请输入主机名", trigger: "blur" }],
-        IP: [{ required: true, message: "请输入IP地址", trigger: "blur" }],
-        management: [
+        ip: [{ required: true, validator: isValidIP, trigger: "blur" }],
+        user: [
           { required: true, message: "请选择管理用户", trigger: "change" }
-        ]
+        ],
+        tag: [{ required: true, message: "请选择管理用户", trigger: "change" }]
       },
-      taglist:[],
+      objarr: [],
+      detailobj: {},
+      idclist: [],
+      taglist: [],
       userlist: [],
-      IDCs: [
-        {
-          id: "001",
-          label: "IDC1"
-        },
-        {
-          id: "002",
-          label: "IDC2"
-        },
-        {
-          id: "003",
-          label: "IDC3"
-        }
-      ],
       hostlist: [],
       multipleSelection: []
     };
@@ -212,7 +262,27 @@ export default {
   components: {
     Pagein
   },
+  watch: {
+    AddDialogVisible: function() {
+      if (!this.AddDialogVisible) {
+        for (let key in this.ruleForm) {
+          if (key == "tag") {
+            this.ruleForm[key] = [];
+          } else {
+            this.ruleForm = "";
+          }
+        }
+      }
+    },
+    batchDialogVisible: function() {
+      if (!this.batchDialogVisible) {
+        this.form.textarea2 = "";
+        this.objarr = [];
+      }
+    }
+  },
   methods: {
+    //获取列表数据
     gethostlist(val) {
       if (val == 1) {
         this.page = 1;
@@ -226,13 +296,40 @@ export default {
         this.loading = false;
         this.total = res.data.data.count;
         this.hostlist = res.data.data.results;
+        // this.inventoryhost();
+        this.getuserlist();
+        this.getidclist();
+        this.gettaglist();
+      });
+    },
+    //点击主机单元格
+    handleJoinPeople(obj) {
+      this.$http.get("host/" + obj.id + "/").then(res => {
+        if (res && res.status == 200) {
+          if (res.data.status == 0) {
+            this.detailobj = res.data.results;
+            this.DialogVisible = true;
+          }
+        }
       });
     },
     //表格多选
     handleSelectionChange(val) {
       this.multipleSelection = val;
-
-      console.log("this.multipleSelection:", this.multipleSelection);
+    },
+    //inventory host
+    inventoryhost() {
+      this.$http.get("add_hosts/").then(res => {
+        if (res && res.status == 200) {
+          if (res.data.status == 0) {
+            //  this.$message(res.data.msg);
+            this.$alert(res.data.msg, "", {
+              confirmButtonText: "确定",
+              callback: action => {}
+            });
+          }
+        }
+      });
     },
     //添加主机
     addhost() {
@@ -245,7 +342,6 @@ export default {
     //批量删除
     batchdel() {
       if (this.multipleSelection.length) {
-        // console.log("multipleSelection:",this.multipleSelection)
         this.deletedata(1);
       } else {
         this.$message.error("请先选择要删除的数据");
@@ -255,25 +351,38 @@ export default {
     getuserlist() {
       if (!this.userlist.length) {
         this.$http.get("user/").then(res => {
-          console.log(res);
           if (res && res.status == 200) {
             if (res.data.status == 0) {
               this.userlist = res.data.data;
-              console.log("userlist:",this.userlist)
+            }
+          }
+        });
+      }
+    },
+    //获取IDC列表
+    getidclist() {
+      if (!this.idclist.length) {
+        this.$http.get("idc/").then(res => {
+          if (res && res.status == 200) {
+            if (res.data.status == 0) {
+              let _data = res.data.data.idc_info;
+              _data.forEach(element => {
+                (element.id = element[0]), (element.label = element[1]);
+              });
+              this.idclist = _data;
             }
           }
         });
       }
     },
     //获取标签列表
-    gettaglist(){
-      if(!this.taglist.length){
+    gettaglist() {
+      if (!this.taglist.length) {
         this.$http.get("tag/").then(res => {
-          console.log(res);
           if (res && res.status == 200) {
             if (res.data.status == 0) {
-              this.taglist = res.data.data;
-              console.log("taglist:",this.taglist)
+              let _data = res.data.data.results;
+              this.taglist = _data;
             }
           }
         });
@@ -296,6 +405,13 @@ export default {
     //编辑
     handleedit(obj) {
       this.AddDialogVisible = true;
+      for (let key in this.ruleForm) {
+        for (let keys in obj) {
+          if (key == keys) {
+            this.ruleForm[key] = obj[keys];
+          }
+        }
+      }
     },
     //单个删除
     handledel(obj) {
@@ -333,13 +449,37 @@ export default {
     submitForm(formName) {
       this.$refs[formName].validate(valid => {
         if (valid) {
-          console.log(formName);
-          if (formName == "form" && !this.form.textarea2) {
-            this.$message.error("请输入相关数据");
+          if (formName == "form") {
+            if (this.form.textarea2) {
+              let _tx = this.form.textarea2;
+              let arr = _tx.split(";");
+              for (let i in arr) {
+                let obj = {},
+                  arr2 = arr[i].split(" ");
+                for (let j in arr2) {
+                  arr2[j] = arr2[j].replace(/(^\[*)|(\]*$)/g, "");
+                  obj.name = arr2[0] ? arr2[0] : "";
+                  obj.ip = arr2[1] ? arr2[1] : "";
+                  obj.user = arr2[2] ? arr2[2] : "";
+                  obj.tag = arr2[3] ? arr2[3] : "";
+                  obj.idc = arr2[4] ? arr2[4] : "";
+                  obj.detail = arr2[5] ? arr2[5] : "";
+                  obj.status = true;
+                }
+                obj.tag = obj.tag.split(",");
+                this.objarr.push(obj);
+              }
+              for (let k in this.objarr) {
+                if (!this.objarr[k].user) {
+                  this.objarr.splice(k, 1);
+                }
+              }
+              this.savedata(2);
+            } else {
+              this.$message.error("请输入相关数据");
+            }
           } else {
-            this.$message.success("提交成功");
-            this.AddDialogVisible = false;
-            this.batchDialogVisible = false;
+            this.savedata(1);
           }
         } else {
           console.log("error submit!!");
@@ -347,19 +487,36 @@ export default {
         }
       });
     },
+    savedata(val) {
+      let arr = [];
+      if (val == 1) {
+        arr.push(this.ruleForm);
+      } else if (val == 2) {
+        arr = this.objarr;
+      }
+      this.loading = true;
+      this.$http.post("host/", arr).then(res => {
+        this.loading = false;
+        this.$message.success("提交成功");
+        this.AddDialogVisible = false;
+        this.batchDialogVisible = false;
+        this.gethostlist(1);
+      });
+    },
     //重置
     resetForm(formName) {
       this.$refs[formName].resetFields();
+      if (formName == "form") {
+        this.form.textarea2 = "";
+      }
     },
     //表格翻页
     handleCurrentChange(val) {
-      console.log("handleCurrentChange", val);
       this.page = val;
       this.gethostlist();
     },
     //修改每页请求数据条数
     handleSizeChange(val) {
-      console.log("handleSizeChange", val);
       this.max_page = val;
       this.gethostlist();
     }
@@ -383,5 +540,13 @@ export default {
 .prompt {
   padding: 10px 0;
   text-align: center;
+}
+.el-dialog__body {
+  .el-row {
+    padding: 7px 0;
+  }
+}
+.el-tag {
+  margin: 0 3px;
 }
 </style>
