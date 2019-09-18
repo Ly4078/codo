@@ -79,7 +79,7 @@
         },
         {
           "id": "15",
-          "name": "管理用户",
+          "name": "标签管理",
           "sort": 5,
           "url": "assets/users"
         }

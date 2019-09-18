@@ -29,20 +29,20 @@
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection"></el-table-column>
-      <el-table-column align="center" sortable label="主机名">
+      <el-table-column align="center" label="主机名">
         <template slot-scope="scope">
           <el-button size="small" @click="handleJoinPeople(scope.row)">{{scope.row.name}}</el-button>
         </template>
       </el-table-column>
-      <el-table-column prop="ip" align="center" sortable label="IP"></el-table-column>
-      <el-table-column prop="in_ip" align="center" sortable label="内网IP"></el-table-column>
+      <el-table-column prop="ip" align="center" label="IP"></el-table-column>
+      <el-table-column prop="in_ip" align="center" label="内网IP"></el-table-column>
       <el-table-column align="center" label="标签">
         <template slot-scope="scope">
           <el-tag v-for="(item,index) in scope.row.tag_name" :key="index">{{item.tag}}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="idc_name" align="center" sortable label="IDC"></el-table-column>
-      <el-table-column prop="user_name" align="center" sortable label="管理用户"></el-table-column>
+      <el-table-column prop="idc_name" align="center" label="IDC"></el-table-column>
+      <el-table-column prop="user_name" align="center" label="管理用户"></el-table-column>
       <el-table-column align="center" label="当前状态">
         <template slot-scope="scope">
           <el-switch
@@ -436,14 +436,27 @@ export default {
         pk: arrid
       };
 
-      this.$http.delete(_Url, { data: _parms }).then(res => {
-        if (res && res.status == 200) {
-          if (res.data.status == 0) {
-            this.$message.success("删除成功");
-            this.gethostlist();
-          }
-        }
-      });
+      this.$confirm("是否确定删除数据?", "提示", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      })
+        .then(() => {
+          this.$http.delete(_Url, { data: _parms }).then(res => {
+            if (res && res.status == 200) {
+              if (res.data.status == 0) {
+                this.$message.success("删除成功");
+                this.gethostlist();
+              }
+            }
+          });
+        })
+        .catch(() => {
+          this.$message({
+            type: "info",
+            message: "已取消删除"
+          });
+        });
     },
     //提交
     submitForm(formName) {
@@ -467,25 +480,26 @@ export default {
                   obj.status = true;
                 }
                 obj.tag = obj.tag.split(",");
-                for(let k in this.userlist){
-                  if(obj.user == this.userlist[k].username){
-                    obj.user=this.user[k].user_id;
+
+                for (let k in this.userlist) {
+                  if (obj.user == this.userlist[k].username) {
+                    obj.user = this.userlist[k].user_id;
                   }
                 }
-                for(let k in this.idclist){
-                  if(obj.idc == this.idclist[k].label){
-                    obj.idc=this.user[k].id;
+                for (let k in this.idclist) {
+                  if (obj.idc == this.idclist[k].label) {
+                    obj.idc = this.idclist[k].id;
                   }
                 }
-                let tagarr=[];
-                for(let k in this.taglist){
-                  for(let key in obj.tag){
-                    if(key == this.taglist[k].name){
-                      tagarr.push(this.taglist[k].id)
+                let tagarr = [];
+                for (let k in this.taglist) {
+                  for (let key in obj.tag) {
+                    if (obj.tag[key] == this.taglist[k].name) {
+                      tagarr.push(this.taglist[k].id);
                     }
                   }
                 }
-                obj.tag=tagarr;
+                obj.tag = tagarr;
                 this.objarr.push(obj);
               }
               for (let k in this.objarr) {
