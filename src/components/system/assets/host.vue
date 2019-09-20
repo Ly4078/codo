@@ -47,7 +47,7 @@
         <template slot-scope="scope">
           <el-switch
             v-model="scope.row.status"
-            @change="changestatus(scope.row)"
+            @change="changestatus(scope.row,1)"
             active-text
             inactive-text
           ></el-switch>
@@ -80,10 +80,11 @@
     ></Pagein>
 
     <el-dialog
-      title="添加主机"
+      :title="ruleForm.id?'编辑主机':'添加主机'"
       :visible.sync="AddDialogVisible"
       :modal-append-to-body="false"
       v-loading="loading"
+      element-loading-text="数据提交中..."
       top="3%"
       width="30%"
       min-width="30%"
@@ -149,6 +150,7 @@
       :modal-append-to-body="false"
       top="3%"
       v-loading="loading"
+      element-loading-text="数据提交中..."
       width="50%"
       center
     >
@@ -225,6 +227,7 @@ export default {
       total: 0,
       page: 1,
       page_size: 3,
+      isedit: false,
       loading: false,
       DialogVisible: false,
       AddDialogVisible: false,
@@ -265,11 +268,13 @@ export default {
   watch: {
     AddDialogVisible: function() {
       if (!this.AddDialogVisible) {
+        this.isedit = false;
         for (let key in this.ruleForm) {
+          console.log(key);
           if (key == "tag") {
             this.ruleForm[key] = [];
           } else {
-            this.ruleForm = "";
+            this.ruleForm[key] = "";
           }
         }
       }
@@ -389,11 +394,17 @@ export default {
       }
     },
     //修改用户状态
-    changestatus(obj) {
-      let _status = obj.status ? 1 : 0;
-      let _parms = {
-        status: _status
-      };
+    changestatus(obj, val) {
+      console.log("val:", val);
+      let _parms = {};
+      if (val == 1) {
+        let _status = obj.status ? 1 : 0;
+        _parms = {
+          status: _status
+        };
+      } else if (val == 2) {
+        _parms = this.ruleForm;
+      }
       this.$http.patch("host/" + obj.id + "/", _parms).then(res => {
         if (res && res.status == 200) {
           if (res.data.status == 0) {
@@ -405,6 +416,7 @@ export default {
     //编辑
     handleedit(obj) {
       this.AddDialogVisible = true;
+      this.isedit = true;
       for (let key in this.ruleForm) {
         for (let keys in obj) {
           if (key == keys) {
@@ -412,6 +424,8 @@ export default {
           }
         }
       }
+      this.ruleForm.id = obj.id;
+      console.log("ruleForm:", this.ruleForm);
     },
     //单个删除
     handledel(obj) {
@@ -480,7 +494,6 @@ export default {
                   obj.status = true;
                 }
                 obj.tag = obj.tag.split(",");
-
                 for (let k in this.userlist) {
                   if (obj.user == this.userlist[k].username) {
                     obj.user = this.userlist[k].user_id;
@@ -494,7 +507,7 @@ export default {
                 let tagarr = [];
                 for (let k in this.taglist) {
                   for (let key in obj.tag) {
-                    if (obj.tag[key] == this.taglist[k].name) {
+                    if (obj.tag.id == this.taglist[k].name) {
                       tagarr.push(this.taglist[k].id);
                     }
                   }
@@ -512,7 +525,11 @@ export default {
               this.$message.error("请输入相关数据");
             }
           } else {
-            this.savedata(1);
+            if (this.isedit) {
+              this.changeobj();
+            } else {
+              this.savedata(1);
+            }
           }
         } else {
           console.log("error submit!!");
@@ -520,6 +537,18 @@ export default {
         }
       });
     },
+    // 编辑保存
+    changeobj() {
+      console.log("rulef:", this.ruleForm);
+      this.$http
+        .patch("host/" + this.ruleForm.id + "/", this.ruleForm)
+        .then(res => {
+          this.$message.success("修改成功");
+          this.gethostlist();
+          this.AddDialogVisible = false;
+        });
+    },
+    //新建保存
     savedata(val) {
       let arr = [];
       if (val == 1) {

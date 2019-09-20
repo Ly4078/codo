@@ -28,30 +28,23 @@
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection"></el-table-column>
-      <el-table-column align="center" label="标签名">
+      <el-table-column prop="name" align="center" label="标签名"></el-table-column>
+      <el-table-column align="center" label="主机名称">
         <template slot-scope="scope">
-          <el-button size="small" @click="handleJoinPeople(scope.row)">{{scope.row.name}}</el-button>
+          <el-tag v-for="(item,index) in scope.row.tag_hosts" :key="index">{{item}}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="ip" align="center" label="主机IP"></el-table-column>
-      <el-table-column prop="in_ip" align="center" sortable label="主机个数"></el-table-column>
+      <el-table-column prop="host_count" align="center" sortable label="主机个数"></el-table-column>
 
       <el-table-column fixed="right" label="操作" align="center">
         <template slot-scope="scope">
           <el-button
-            :disabled="!scope.row.status"
             @click="handleedit(scope.row)"
             type="primary"
             size="mini"
             icon="el-icon-edit"
           >编辑</el-button>
-          <el-button
-            :disabled="!scope.row.status"
-            @click="handledel(scope.row)"
-            type="primary"
-            size="mini"
-            icon="el-icon-edit"
-          >删除</el-button>
+          <el-button @click="handledel(scope.row)" type="primary" size="mini" icon="el-icon-edit">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -63,16 +56,16 @@
     ></Pagein>
 
     <el-dialog
-      title="添加主机"
+      :title="ruleForm.id?'编辑标签':'添加标签'"
       :visible.sync="AddDialogVisible"
       :modal-append-to-body="false"
       v-loading="loading"
+      element-loading-text="数据提交中..."
       top="3%"
       width="30%"
       min-width="30%"
       center
     >
-      <p class="prompt">管理用户：用来登陆你的主机获取资产信息，请务必配置！</p>
       <el-form
         :model="ruleForm"
         :rules="rules"
@@ -80,44 +73,8 @@
         label-width="100px"
         class="demo-ruleForm"
       >
-        <el-form-item label="主机名" prop="name">
-          <el-input v-model="ruleForm.name" clearable placeholder="请输入主机名"></el-input>
-        </el-form-item>
-        <el-form-item label="ip" prop="ip">
-          <el-input v-model="ruleForm.ip" clearable placeholder="请输入IP地址"></el-input>
-        </el-form-item>
-        <el-form-item label="idc">
-          <el-select v-model="ruleForm.idc" placeholder="请选择IDC机房" @focus="getidclist">
-            <el-option
-              v-for="item in idclist"
-              :key="item.id+'idc'"
-              :label="item.label"
-              :value="item.id"
-            ></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="管理用户" prop="user">
-          <el-select v-model="ruleForm.user" placeholder="请选择一个管理用户" @focus="getuserlist">
-            <el-option
-              v-for="item in userlist"
-              :key="item.user_id+'user'"
-              :label="item.username"
-              :value="item.user_id"
-            ></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="标签" prop="tag">
-          <el-select v-model="ruleForm.tag" multiple placeholder="请选择关联的标签" @focus="gettaglist">
-            <el-option
-              v-for="item in taglist"
-              :key="item.id+'tag'"
-              :label="item.name"
-              :value="item.id"
-            ></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="备注" prop="detail">
-          <el-input type="textarea" v-model="ruleForm.detail" placeholder="简单描述一下吧"></el-input>
+        <el-form-item label="标签名" prop="name">
+          <el-input v-model="ruleForm.name" clearable placeholder="请输入标签名"></el-input>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="submitForm('ruleForm')">提交</el-button>
@@ -132,16 +89,17 @@
       :modal-append-to-body="false"
       top="3%"
       v-loading="loading"
+      element-loading-text="数据提交中..."
       width="50%"
       center
     >
-      <p class="prompt">格式: [name] [ip] [user] [tag] [idc] [detail] 多条数据用分号(;)分开, 管理用户(user)必须是存在的</p>
+      <p class="prompt">格式: [name] 多条数据用分号(;)分开</p>
       <el-form ref="form" :model="form" label-width="0px">
         <el-form-item label>
           <el-input
             type="textarea"
             :autosize="{ minRows: 14, maxRows: 30}"
-            placeholder="[name] [ip] [user] [tag] [idc] [detail]"
+            placeholder="[name]"
             v-model="form.textarea2"
           ></el-input>
         </el-form-item>
@@ -150,37 +108,6 @@
           <el-button @click="resetForm('form')">重置</el-button>
         </el-form-item>
       </el-form>
-    </el-dialog>
-
-    <el-dialog
-      title="主机详情"
-      :visible.sync="DialogVisible"
-      :modal-append-to-body="false"
-      width="40%"
-      center
-    >
-      <el-row>
-        <el-col :span="12">内存：{{detailobj.mem}}</el-col>
-        <el-col :span="12">CPU：{{detailobj.cpus}}</el-col>
-      </el-row>
-      <el-row>
-        <el-col :span="12">系统：{{detailobj.brand}}</el-col>
-        <el-col :span="12">版本：{{detailobj.release}}</el-col>
-      </el-row>
-      <el-row>
-        <el-col :span="12">主机名：{{detailobj.host_name}}</el-col>
-        <el-col :span="12">IP：{{detailobj.host_ip}}</el-col>
-      </el-row>
-      <el-row>
-        <el-col :span="12">管理用户：{{detailobj.host_username}}</el-col>
-        <el-col :span="12">IDC机房：{{detailobj.host_idc}}</el-col>
-      </el-row>
-      <el-row>
-        <el-col :span="24">
-          标签：
-          <el-tag v-for="(item,index) in detailobj.host_tag" :key="index">{{item.tag}}</el-tag>
-        </el-col>
-      </el-row>
     </el-dialog>
   </div>
 </template>
@@ -216,28 +143,15 @@ export default {
         textarea2: ""
       },
       actObj: {},
-      sizes: [3, 4, 5],
+      sizes: [3, 5, 10],
       ruleForm: {
-        name: "",
-        ip: "",
-        idc: "",
-        user: "",
-        tag: [],
-        detail: ""
+        name: ""
       },
       rules: {
-        name: [{ required: true, message: "请输入主机名", trigger: "blur" }],
-        ip: [{ required: true, validator: isValidIP, trigger: "blur" }],
-        user: [
-          { required: true, message: "请选择管理用户", trigger: "change" }
-        ],
-        tag: [{ required: true, message: "请选择管理用户", trigger: "change" }]
+        name: [{ required: true, message: "请输入标签名", trigger: "blur" }]
       },
       objarr: [],
-      detailobj: {},
-      idclist: [],
       taglist: [],
-      userlist: [],
       hostlist: [],
       multipleSelection: []
     };
@@ -248,13 +162,7 @@ export default {
   watch: {
     AddDialogVisible: function() {
       if (!this.AddDialogVisible) {
-        for (let key in this.ruleForm) {
-          if (key == "tag") {
-            this.ruleForm[key] = [];
-          } else {
-            this.ruleForm = "";
-          }
-        }
+        this.ruleForm.name = "";
       }
     },
     batchDialogVisible: function() {
@@ -270,7 +178,7 @@ export default {
       if (val == 1) {
         this.page = 1;
       }
-      let _Url = "host/?page=" + this.page + "&page_size=" + this.page_size;
+      let _Url = "tag/?page=" + this.page + "&page_size=" + this.page_size;
       this.loading = true;
       if (this.search) {
         _Url += "&search=" + this.search;
@@ -279,40 +187,11 @@ export default {
         this.loading = false;
         this.total = res.data.data.count;
         this.hostlist = res.data.data.results;
-        // this.inventoryhost();
-        this.getuserlist();
-        this.getidclist();
-        this.gettaglist();
-      });
-    },
-    //点击主机单元格
-    handleJoinPeople(obj) {
-      this.$http.get("host/" + obj.id + "/").then(res => {
-        if (res && res.status == 200) {
-          if (res.data.status == 0) {
-            this.detailobj = res.data.results;
-            this.DialogVisible = true;
-          }
-        }
       });
     },
     //表格多选
     handleSelectionChange(val) {
       this.multipleSelection = val;
-    },
-    //inventory host
-    inventoryhost() {
-      this.$http.get("add_hosts/").then(res => {
-        if (res && res.status == 200) {
-          if (res.data.status == 0) {
-            //  this.$message(res.data.msg);
-            this.$alert(res.data.msg, "", {
-              confirmButtonText: "确定",
-              callback: action => {}
-            });
-          }
-        }
-      });
     },
     //添加主机
     addhost() {
@@ -330,54 +209,14 @@ export default {
         this.$message.error("请先选择要删除的数据");
       }
     },
-    //获取用户列表
-    getuserlist() {
-      if (!this.userlist.length) {
-        this.$http.get("user/").then(res => {
-          if (res && res.status == 200) {
-            if (res.data.status == 0) {
-              this.userlist = res.data.data;
-            }
-          }
-        });
-      }
-    },
-    //获取IDC列表
-    getidclist() {
-      if (!this.idclist.length) {
-        this.$http.get("idc/").then(res => {
-          if (res && res.status == 200) {
-            if (res.data.status == 0) {
-              let _data = res.data.data.idc_info;
-              _data.forEach(element => {
-                (element.id = element[0]), (element.label = element[1]);
-              });
-              this.idclist = _data;
-            }
-          }
-        });
-      }
-    },
-    //获取标签列表
-    gettaglist() {
-      if (!this.taglist.length) {
-        this.$http.get("tag/").then(res => {
-          if (res && res.status == 200) {
-            if (res.data.status == 0) {
-              let _data = res.data.data.results;
-              this.taglist = _data;
-            }
-          }
-        });
-      }
-    },
+
     //修改用户状态
     changestatus(obj) {
       let _status = obj.status ? 1 : 0;
       let _parms = {
         status: _status
       };
-      this.$http.patch("host/" + obj.id + "/", _parms).then(res => {
+      this.$http.patch("tag/" + obj.id + "/", _parms).then(res => {
         if (res && res.status == 200) {
           if (res.data.status == 0) {
             this.$message.success("修改成功");
@@ -395,6 +234,7 @@ export default {
           }
         }
       }
+      this.ruleForm.id = obj.id;
     },
     //单个删除
     handledel(obj) {
@@ -404,7 +244,7 @@ export default {
     //删除数据
     deletedata(val) {
       let arrid = [],
-        _Url = "host/",
+        _Url = "tag/",
         _parms = {};
       if (val == 1) {
         //批量删除
@@ -455,38 +295,11 @@ export default {
                 for (let j in arr2) {
                   arr2[j] = arr2[j].replace(/(^\[*)|(\]*$)/g, "");
                   obj.name = arr2[0] ? arr2[0] : "";
-                  obj.ip = arr2[1] ? arr2[1] : "";
-                  obj.user = arr2[2] ? arr2[2] : "";
-                  obj.tag = arr2[3] ? arr2[3] : "";
-                  obj.idc = arr2[4] ? arr2[4] : "";
-                  obj.detail = arr2[5] ? arr2[5] : "";
-                  obj.status = true;
                 }
-                obj.tag = obj.tag.split(",");
-
-                for (let k in this.userlist) {
-                  if (obj.user == this.userlist[k].username) {
-                    obj.user = this.userlist[k].user_id;
-                  }
-                }
-                for (let k in this.idclist) {
-                  if (obj.idc == this.idclist[k].label) {
-                    obj.idc = this.idclist[k].id;
-                  }
-                }
-                let tagarr = [];
-                for (let k in this.taglist) {
-                  for (let key in obj.tag) {
-                    if (obj.tag[key] == this.taglist[k].name) {
-                      tagarr.push(this.taglist[k].id);
-                    }
-                  }
-                }
-                obj.tag = tagarr;
                 this.objarr.push(obj);
               }
               for (let k in this.objarr) {
-                if (!this.objarr[k].user) {
+                if (!this.objarr[k].name) {
                   this.objarr.splice(k, 1);
                 }
               }
@@ -495,7 +308,21 @@ export default {
               this.$message.error("请输入相关数据");
             }
           } else {
-            this.savedata(1);
+            if (this.ruleForm.id) {
+              this.$http
+                .patch("tag/" + this.ruleForm.id + "/", this.ruleForm)
+                .then(res => {
+                  if (res && res.status == 200) {
+                    if (res.data.status == 0) {
+                      this.gethostlist();
+                      this.$message.success("修改成功");
+                      this.AddDialogVisible = false;
+                    }
+                  }
+                });
+            } else {
+              this.savedata(1);
+            }
           }
         } else {
           console.log("error submit!!");
@@ -511,7 +338,7 @@ export default {
         arr = this.objarr;
       }
       this.loading = true;
-      this.$http.post("host/", arr).then(res => {
+      this.$http.post("tag/", arr).then(res => {
         this.loading = false;
         this.$message.success("提交成功");
         this.AddDialogVisible = false;

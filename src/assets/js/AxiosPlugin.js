@@ -8,7 +8,7 @@ var _this = this, errnum = 1, Url = window.location.origin, _baseURL = "/api/";
 if (Url.indexOf("localhost") != -1) {
   _baseURL = "/api/"
 } else {
-  _baseURL = 'http://115.28.210.128/devops/'
+  _baseURL = 'http://115.28.210.128:8088/devops/'
 }
 export const Axios = axios.create({
   baseURL: _baseURL, //开发
