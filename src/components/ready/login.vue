@@ -26,8 +26,17 @@
             placeholder="登录密码"
             show-password
             type="password"
-            @keyup.enter.native="submitForm('ruleForm')"
           ></el-input>
+        </el-form-item>
+        <el-form-item label prop="code">
+          <el-input
+            v-model="ruleForm.code"
+            maxlength="32"
+            placeholder="验证码"
+            @keyup.enter.native="submitForm('ruleForm')"
+          >
+            <el-button slot="append" @click="handlecode">获取验证码</el-button>
+          </el-input>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="submitForm('ruleForm')">登录</el-button>
@@ -55,17 +64,27 @@ export default {
     return {
       ruleForm: {
         username: "",
-        password: ""
+        password: "",
+        code: ""
       },
       rules: {
         username: [
           { required: true, message: "请输入用户名", trigger: "blur" }
         ],
-        password: [{ required: true, message: "请输入密码", trigger: "blur" }]
+        password: [{ required: true, message: "请输入密码", trigger: "blur" }],
+        code: [{ required: true, message: "请输入验证码", trigger: "blur" }]
       }
     };
   },
   methods: {
+    //获取验证码
+    handlecode() {
+      this.$http.get("login/").then(res => {
+        if (res.data.status === 0) {
+          this.ruleForm.code = res.data.results.code;
+        }
+      });
+    },
     //点击登陆，校验表单
     submitForm(formName) {
       this.$refs[formName].validate(valid => {
@@ -79,15 +98,12 @@ export default {
     },
     //登录
     login() {
-      let _Url = "login/",
-        _parms = {
-          username: this.ruleForm.username,
-          password: this.ruleForm.password
-        };
+      let _Url = "login/";
+
       // this.fullScreen();
       // this.$router.push({ path: "/Home", params: {} });
       // return;
-      this.$http.post(_Url, _parms).then(res => {
+      this.$http.post(_Url, this.ruleForm).then(res => {
         if (res.data.status == 0) {
           this.$store.commit("setToken", res.data.results.token);
           // this.fullScreen();
