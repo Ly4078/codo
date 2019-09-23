@@ -207,8 +207,8 @@ export default {
     },
     "ruleForm.mobile": {
       handler: function() {
-        clearInterval(_this.timer);
-        _this.num = 0;
+        clearInterval(this.timer);
+        this.num = 0;
       }
     }
   },
@@ -238,6 +238,7 @@ export default {
     },
     //获取验证码
     getsms() {
+      const _this=this;
       this.$http
         .post("sms/", {
           mobile: this.ruleForm.mobile
