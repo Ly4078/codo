@@ -3,7 +3,7 @@
     <el-container justify="center">
       <el-header>
         <div class="title">
-          <img src="../../assets/images/jingyu.jpg" alt="管理员头像">
+          <img src="../../assets/images/jingyu.jpg" alt="管理员头像" />
           Devops Manage System
         </div>
         <div class="info">
@@ -25,8 +25,8 @@
             @close="handleClose"
           >
             <el-submenu v-for="item in menulist" :key="item.id" :index="item.id">
-              <template slot="title" >
-                <img :src="item.imgurl" class="menuicon" alt v-if="item.imgurl">
+              <template slot="title">
+                <img :src="item.imgurl" class="menuicon" alt v-if="item.imgurl" />
                 <span>{{item.name}}</span>
               </template>
               <el-menu-item-group v-if="item.child">
@@ -97,8 +97,7 @@
 
 
 <script>
-
-import _menulist from '../../../static/mock/menulist.json';
+import _menulist from "../../../static/mock/menulist.json";
 export default {
   name: "home",
   data() {
@@ -144,7 +143,7 @@ export default {
       }
     };
     return {
-      menu:"../../assets/images/menu.png",
+      menu: "../../assets/images/menu.png",
       menulist: [],
       ispwd1: true,
       ispwd2: true,
@@ -179,11 +178,10 @@ export default {
       }
     }
   },
-  mounted(){
-    this.menulist=_menulist.data;
+  mounted() {
+    this.menulist = _menulist.data;
   },
   methods: {
-  
     handitems(obj) {
       this.$router.push("/" + obj.url);
     },
@@ -227,11 +225,19 @@ export default {
     },
     //退出登录
     handleCommand() {
+      this.$store.commit("setUserInfo", {});
+      this.$store.commit("setshopInfo", {});
+      this.$store.commit("setToken", "");
+      sessionStorage.setItem("TOKEN", "");
+      localStorage.clear();
+      this.$router.push({ name: "Login" });
+      return;
       this.$http.get("logout").then(res => {
         if (res.status == 200) {
           this.$store.commit("setUserInfo", {});
           this.$store.commit("setshopInfo", {});
           this.$store.commit("setToken", "");
+          sessionStorage.setItem("TOKEN", "");
           localStorage.clear();
           this.$router.push({ name: "Login" });
         }
@@ -287,7 +293,7 @@ export default {
       // border-right: 2px solid #ebebeb;
       background: #2f323e;
     }
-    .menuicon{
+    .menuicon {
       width: 18px;
       height: 18px;
     }
@@ -300,7 +306,7 @@ export default {
       }
     }
   }
-  .el-submenu{
+  .el-submenu {
     text-align: left;
   }
   // .el-table tbody tr:hover>td { background-color: #0a36b9 }

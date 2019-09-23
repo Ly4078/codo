@@ -26,11 +26,11 @@ Axios.interceptors.request.use(
       config.headers = {
         "Content-Type": 'application/x-www-form-urlencoded'
       };
-    } else if (config.method === "post" || config.method === "put" || config.method==='delete') {
+    } else if (config.method === "post" || config.method === "put" || config.method === 'delete') {
       config.headers = {
         "Content-Type": "application/json"
       };
-    }else {
+    } else {
       config.headers = {
         "Content-Type": "application/json;charset=UTF-8"
       };
@@ -50,12 +50,13 @@ Axios.interceptors.request.use(
 Axios.interceptors.response.use(
   res => {
     //对响应数据做些事
-    console.log("res:",res)
+    console.log("res:", res)
     if (res.status == 200) {
-      if(res.data.status==0){
-          return res;
-      }
-      if(res.data.status==1){
+      if (res.config.url === '/api/mobiles/') {
+        return res;
+      } else if (res.data.status == 0) {
+        return res;
+      } else if (res.data.status == 1) {
         Message({
           duration: 5000,
           showClose: true,
@@ -66,7 +67,7 @@ Axios.interceptors.response.use(
     }
   },
   error => {
-    console.log("error:",error)
+    console.log("error:", error)
     if (errnum == 1) {
       errnum = 2;
       setTimeout(() => {

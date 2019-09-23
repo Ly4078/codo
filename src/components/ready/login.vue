@@ -2,7 +2,15 @@
   <div class="login">
     <img class="loginbj" src="../../assets/images/login_bj.jpg" alt />
     <div class="login_box">
-      <div class="box-title">用户登录</div>
+      <div class="box-title">
+        <el-button
+          size="mini"
+          v-for="item of topbuts"
+          :key="item.id"
+          :type="acttopid==item.id?'primary':''"
+          @click="handletpbus(item.id)"
+        >{{item.label}}</el-button>
+      </div>
       <el-form
         :model="ruleForm"
         :rules="rules"
@@ -10,20 +18,22 @@
         label-width="0"
         class="demo-ruleForm"
       >
-        <el-form-item label prop="username">
+        <el-form-item label prop="username" v-if="acttopid==1">
           <el-input
             v-model.number="ruleForm.username"
-            maxlength="11"
             :autofocus="true"
-            placeholder="用户名"
+            placeholder="请输入用户名"
             clearable
           ></el-input>
         </el-form-item>
-        <el-form-item label prop="password">
+        <el-form-item label prop="mobile" v-if="acttopid==2">
+          <el-input v-model.number="ruleForm.mobile" maxlength="11" placeholder="请输入手机号" clearable></el-input>
+        </el-form-item>
+        <el-form-item label prop="password" v-if="acttopid==1">
           <el-input
             v-model="ruleForm.password"
             maxlength="32"
-            placeholder="登录密码"
+            placeholder="请输入登录密码"
             show-password
             type="password"
           ></el-input>
@@ -31,22 +41,29 @@
         <el-form-item label prop="code">
           <el-input
             v-model="ruleForm.code"
-            maxlength="32"
             placeholder="验证码"
             @keyup.enter.native="submitForm('ruleForm')"
           >
-            <el-button slot="append" @click="handlecode">获取验证码</el-button>
+            <el-button slot="append" @click="handlecode" :disabled="num>0?true:false">
+              获取验证码
+              <i v-show="num">({{num}}s)</i>
+            </el-button>
           </el-input>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="submitForm('ruleForm')">登录</el-button>
+          <el-button
+            class="loginbutton"
+            type="primary"
+            @click="submitForm('ruleForm')"
+          >{{this.acttopid == 3?'注册':'登录'}}</el-button>
         </el-form-item>
       </el-form>
     </div>
   </div>
 </template>
 <script>
-const validusername = (rule, value, callback) => {
+var resultsCode = "";
+const checkPhone = (rule, value, callback) => {
   const reg = /^1[3|4|5|6|7|8][0-9]\d{8}$/;
   if (!value) {
     callback(new Error("请输入电话号码"));
@@ -57,33 +74,125 @@ const validusername = (rule, value, callback) => {
   }
 };
 
+const checkCode = (rule, value, callback) => {
+  const mailReg = /^1[3456789]\d{9}$/;
+  if (!value) {
+    return callback(new Error("请输入验证码"));
+  }
+  setTimeout(() => {
+    if (value == resultsCode) {
+      callback();
+    } else {
+      callback(new Error("验证码错误"));
+    }
+  }, 100);
+};
 import axios from "axios";
 export default {
   name: "Login",
   data() {
     return {
+      topbuts: [
+        {
+          id: 1,
+          label: "账号密码登录"
+        },
+        {
+          id: 2,
+          label: "手机号登录"
+        }
+      ],
+      timer: null,
+      num: 0,
+      acttopid: 1,
       ruleForm: {
         username: "",
         password: "",
+        mobile: "",
         code: ""
       },
       rules: {
         username: [
           { required: true, message: "请输入用户名", trigger: "blur" }
         ],
+        mobile: [{ required: true, validator: checkPhone, trigger: "blur" }],
         password: [{ required: true, message: "请输入密码", trigger: "blur" }],
-        code: [{ required: true, message: "请输入验证码", trigger: "blur" }]
+        code: [{ required: true, validator: checkCode, trigger: "blur" }]
       }
     };
   },
+  watch: {
+    "ruleForm.mobile": {
+      handler: function() {
+        clearInterval(_this.timer);
+        _this.num = 0;
+      }
+    }
+  },
   methods: {
+    handletpbus(val) {
+      this.acttopid = val;
+      for (let key in this.ruleForm) {
+        this.ruleForm[key] = "";
+      }
+    },
     //获取验证码
     handlecode() {
-      this.$http.get("login/").then(res => {
-        if (res.data.status === 0) {
-          this.ruleForm.code = res.data.results.code;
+      const _this = this;
+      if (this.acttopid == 1) {
+        this.$http.get("login/").then(res => {
+          if (res.data.status === 0) {
+            resultsCode = res.data.results.code;
+            this.$notify({
+              title: "提示",
+              message: "验证码:" + res.data.results.code,
+              duration: 0
+            });
+            let num = 60;
+            this.timer = setInterval(() => {
+              num > 0 ? num-- : clearInterval(_this.timer);
+              _this.num = num;
+            }, 1000);
+            // this.ruleForm.code = res.data.results.code;
+          }
+        });
+      } else if (this.acttopid == 2) {
+        const reg = /^1[3|4|5|6|7|8][0-9]\d{8}$/;
+        if (this.ruleForm.mobile) {
+          if (reg.test(this.ruleForm.mobile)) {
+            this.$http
+              .post("mobiles/", {
+                mobile: this.ruleForm.mobile.toString()
+              })
+              .then(res => {
+                if (res.data.status == 0) {
+                  this.getsms();
+                } else {
+                  this.$message.error("该手机号未注册，请联系管理员注册");
+                }
+              });
+          }
+        } else {
+          this.$message.error("请输入手机号");
         }
-      });
+      }
+    },
+    //获取验证码
+    getsms() {
+      this.$http
+        .post("sms/", {
+          mobile: this.ruleForm.mobile.toString()
+        })
+        .then(res => {
+          resultsCode = res.data.results.code;
+          let num = 60;
+          this.timer = setInterval(() => {
+            num > 0 ? num-- : clearInterval(_this.timer);
+            _this.num = num;
+          }, 1000);
+          console.log("resultsCode111:", resultsCode);
+          console.log("sms:", res);
+        });
     },
     //点击登陆，校验表单
     submitForm(formName) {
@@ -96,22 +205,28 @@ export default {
         }
       });
     },
+
     //登录
     login() {
-      let _Url = "login/";
-
-      // this.fullScreen();
-      // this.$router.push({ path: "/Home", params: {} });
-      // return;
-      this.$http.post(_Url, this.ruleForm).then(res => {
+      let _Url = "",
+        _parms = {};
+      if (this.acttopid == 1) {
+        _Url = "login/";
+      } else {
+        _Url = "mobile/";
+      }
+      for (let key in this.ruleForm) {
+        if (this.ruleForm[key]) {
+          _parms[key] = this.ruleForm[key].toString();
+        }
+      }
+      this.$http.post(_Url, _parms).then(res => {
         if (res.data.status == 0) {
           this.$store.commit("setToken", res.data.results.token);
           // this.fullScreen();
           this.$store.commit("setUserInfo", res.data);
           this.$router.push({ path: "/Home", params: {} });
         } else {
-          this.ruleForm.username = "";
-          this.ruleForm.password = "";
           this.$message({
             message: res.data.msg,
             duration: 5000,
@@ -190,7 +305,7 @@ export default {
       margin-bottom: 24px;
     }
   }
-  .el-button--primary {
+  .loginbutton {
     width: 100%;
   }
   .login_box {

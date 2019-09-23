@@ -35,7 +35,7 @@ Vue.use(VueQuillEditor)
 Vue.config.productionTip = false
 Vue.prototype.$store = store
 Vue.prototype.$axios = axios    //全局注册，使用方法为:this.$axios
-// Vue.prototype.qs = qs           //全局注册，使用方法为:this.q
+Vue.prototype.qs = qs           //全局注册，使用方法为:this.q
 /* eslint-disable no-new */
 
 
