@@ -50,7 +50,7 @@ Axios.interceptors.request.use(
 Axios.interceptors.response.use(
   res => {
     //对响应数据做些事
-    console.log("res:", res)
+    // console.log("res:", res)
     if (res.status == 200) {
       if (res.config.url === '/api/mobiles/') {
         return res;
@@ -67,7 +67,7 @@ Axios.interceptors.response.use(
     }
   },
   error => {
-    console.log("error:", error)
+    // console.log("error:", error)
     if (errnum == 1) {
       errnum = 2;
       setTimeout(() => {

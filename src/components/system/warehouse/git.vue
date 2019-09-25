@@ -73,8 +73,18 @@
         label-width="100px"
         class="demo-ruleForm"
       >
-        <el-form-item label="用户" prop="user">
+        <!-- <el-form-item label="用户" prop="user">
           <el-input v-model="ruleForm.user" clearable placeholder="请输入用户" disabled></el-input>
+        </el-form-item>-->
+        <el-form-item label="user" prop="user">
+          <el-select v-model="ruleForm.user" placeholder="请选择用户">
+            <el-option
+              v-for="item in user_repo.id_user"
+              :key="item.id+'user'"
+              :label="item.username"
+              :value="item.id"
+            ></el-option>
+          </el-select>
         </el-form-item>
         <el-form-item label="项目名称" prop="project_name">
           <el-input v-model="ruleForm.project_name" clearable placeholder="请输入项目名称"></el-input>
@@ -82,10 +92,19 @@
         <el-form-item label=" 项目地址" prop="project_url">
           <el-input v-model="ruleForm.project_url" clearable placeholder="请输入 项目地址"></el-input>
         </el-form-item>
-        <el-form-item label="仓库类型" prop="repo_type">
+        <!-- <el-form-item label="仓库类型" prop="repo_type">
           <el-input v-model="ruleForm.repo_type" clearable placeholder="请输入仓库类型"></el-input>
+        </el-form-item>-->
+        <el-form-item label="repo_type" prop="repo_type">
+          <el-select v-model="ruleForm.repo_type" placeholder="请选择IDC机房">
+            <el-option
+              v-for="item in user_repo.type_choice"
+              :key="item.id+'repo'"
+              :label="item.label"
+              :value="item.id"
+            ></el-option>
+          </el-select>
         </el-form-item>
-
         <el-form-item>
           <el-button type="primary" @click="submitForm('ruleForm')">提交</el-button>
           <el-button @click="resetForm('ruleForm')">重置</el-button>
@@ -114,7 +133,11 @@ export default {
         user: "",
         repo_type: ""
       },
+      user_repo: [],
       rules: {
+        user: [
+          { required: true, message: "请选择管理用户", trigger: "change" }
+        ],
         project_name: [
           { required: true, message: "请输入项目名称", trigger: "blur" }
         ],
@@ -122,7 +145,7 @@ export default {
           { required: true, message: "请输入项目地址", trigger: "blur" }
         ],
         repo_type: [
-          { required: true, message: "请输入仓库类型", trigger: "blur" }
+          { required: true, message: "请选择管理用户", trigger: "change" }
         ]
       },
       gitlist: [],
@@ -139,11 +162,24 @@ export default {
           this.ruleForm[key] = "";
           delete this.ruleForm.id;
         }
-        this.ruleForm.user = this.$store.state.userInfo.results.username;
       }
     }
   },
   methods: {
+    getuserrepo() {
+      this.$http.get("user_repo/").then(res => {
+        let _data = res.data.results;
+        for (let i in _data.id_user) {
+          _data.id_user[i].id = Number(_data.id_user[i].id);
+        }
+        for (let i in _data.type_choice) {
+          _data.type_choice[i].id = Number(_data.type_choice[i][0]);
+          _data.type_choice[i].label = _data.type_choice[i][1];
+        }
+        this.user_repo = _data;
+        this.getgitlist();
+      });
+    },
     //新建仓库
     addgit() {
       this.AddDialogVisible = !this.AddDialogVisible;
@@ -161,23 +197,21 @@ export default {
     },
     //表格翻页
     handleCurrentChange(val) {
-      console.log("handleCurrentChange", val);
+      this.page = val;
       this.getgitlist();
     },
     //修改每页请求数据条数
     handleSizeChange(val) {
-      console.log("handleSizeChange", val);
+      this.page_size = val;
       this.getgitlist();
     },
     //表格多选
     handleSelectionChange(val) {
       this.multipleSelection = val;
-      console.log("multipleSelection:", this.multipleSelection);
     },
     //编辑
     handleedit(obj) {
       this.AddDialogVisible = true;
-      console.log("obj:", obj);
       obj.repo_type = obj.get_type;
       for (let key in this.ruleForm) {
         for (let keys in obj) {
@@ -187,11 +221,11 @@ export default {
         }
       }
       delete this.ruleForm.get_type;
+      this.ruleForm.user = obj.get_username;
       this.ruleForm.id = obj.id;
     },
     //删除
     handledel(obj) {
-      console.log("obj:", obj);
       this.actObj = obj;
       this.deletedata(2);
     },
@@ -256,13 +290,35 @@ export default {
     //新建
     newgit() {
       this.$http.post("repo/", this.ruleForm).then(res => {
-        console.log("ad:", res);
+        if (res && res.status == 200) {
+          if (res.data.status == 0) {
+            this.$message.success("新建成功");
+            this.AddDialogVisible = false;
+            this.getgitlist();
+          } else {
+            this.$message.error(res.data.msg);
+          }
+        }
       });
     },
     //编辑
     editgit() {
-      this.$http.patch("repo/" + this.ruleForm.id, this.ruleForm).then(res => {
-        console.log("edit:", res);
+      let _parms = {};
+      _parms.id = this.ruleForm.id;
+      _parms.project_name = this.ruleForm.project_name;
+      _parms.project_url = this.ruleForm.project_url;
+      _parms.get_username = this.ruleForm.user;
+      _parms.get_type = this.ruleForm.repo_type;
+      this.$http.patch("repo/" + this.ruleForm.id + "/", _parms).then(res => {
+        if (res && res.status == 200) {
+          if (res.data.status == 0) {
+            this.$message.success("修改成功");
+            this.AddDialogVisible = false;
+            this.getgitlist();
+          } else {
+            this.$message.error(res.data.msg);
+          }
+        }
       });
     },
     //重置
@@ -271,10 +327,7 @@ export default {
     }
   },
   created() {
-    console.log(this.$store.state.userInfo.results);
-    this.ruleForm.user = this.$store.state.userInfo.results.username;
-    console.log("ruleForm:", this.ruleForm);
-    this.getgitlist();
+    this.getuserrepo();
   }
 };
 </script>
