@@ -145,11 +145,12 @@ export default {
         this.$http.get("login/").then(res => {
           if (res.data.status === 0) {
             resultsCode = res.data.results.code;
-            this.$notify({
-              title: "提示",
-              message: "验证码:" + res.data.results.code,
-              duration: 0
-            });
+            this.ruleForm.code=res.data.results.code;
+            // this.$notify({
+            //   title: "提示",
+            //   message: "验证码:" + res.data.results.code,
+            //   duration: 0
+            // });
             let num = 60;
             this.timer = setInterval(() => {
               num > 0 ? num-- : clearInterval(_this.timer);

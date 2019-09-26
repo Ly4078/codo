@@ -8,38 +8,40 @@
         class="demo-ruleForm"
         label-width="130px"
       >
-        <el-form-item label="选择主机" clearable prop="zhuji">
-          <el-select v-model="ruleForm.zhuji" clearable placeholder="请选择主机">
-            <el-option label="主机一" value="shanghai"></el-option>
-            <el-option label="主机二" value="beijing"></el-option>
+        <el-form-item label="主机IP">
+          <el-input clearable v-model="ruleForm.ips" disabled></el-input>
+        </el-form-item>
+        <el-form-item label="主机名称">
+          <el-input clearable v-model="ruleForm.hosts" disabled></el-input>
+        </el-form-item>
+        <el-form-item label="脚本">
+          <el-input clearable v-model="ruleForm.scripts" disabled></el-input>
+        </el-form-item>
+        <el-form-item label="分支">
+          <el-input clearable v-model="ruleForm.branch" disabled></el-input>
+        </el-form-item>
+        <el-form-item label="仓库名称" prop="hosts">
+          <el-select v-model="ruleForm.depot" clearable placeholder="请选择仓库名称">
+            <el-option
+              v-for="item in app_maven"
+              :key="item.id+'maven'"
+              :label="item.repo_name"
+              :value="item.id"
+            ></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="选择应用" clearable prop="leixin">
-          <el-select v-model="ruleForm.leixin" clearable placeholder="请选择应用">
-            <el-option label="应用一" value="shanghai"></el-option>
-            <el-option label="应用二" value="beijing"></el-option>
+        <el-form-item label="仓库地址">
+          <el-input clearable v-model="ruleForm.address" disabled></el-input>
+        </el-form-item>
+        <el-form-item label="tag">
+          <el-select v-model="ruleForm.tag" clearable placeholder="请选择tag" @focus="focustag">
+            <el-option
+              v-for="item in tags"
+              :key="item.id+'tag'"
+              :label="item.repo_name"
+              :value="item.id"
+            ></el-option>
           </el-select>
-        </el-form-item>
-        <el-form-item label="开始时间" required>
-          <el-col :span="5">
-            <el-form-item prop="date1">
-              <el-date-picker
-                type="date"
-                placeholder="选择日期"
-                v-model="ruleForm.date1"
-                style="width: 100%;"
-              ></el-date-picker>
-            </el-form-item>
-          </el-col>
-          <el-col class="line" :span="0.7">-----</el-col>
-          <el-col :span="5">
-            <el-form-item prop="date2">
-              <el-time-picker placeholder="选择时间" v-model="ruleForm.date2" style="width: 100%;"></el-time-picker>
-            </el-form-item>
-          </el-col>
-        </el-form-item>
-        <el-form-item label="备注详情" prop="desc">
-          <el-input type="textarea" v-model="ruleForm.desc" clearable></el-input>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="submitForm('ruleForm')">提交</el-button>
@@ -54,14 +56,18 @@ export default {
   name: "release",
   data() {
     return {
+      app_maven: [],
+      tags: [],
       ruleForm: {
-        date1: "",
-        date2: "",
-        zhuji: "",
-        leixin: "",
-        beifen: "",
-        type: [],
-        desc: ""
+        ips: '["127.0.0.1"]',
+        module: "script",
+        hosts: '["tomcat-node1902"]',
+        address: "",
+        branch: "master",
+        scripts: "/root/scripts/maven_java.sh",
+        tag: "",
+        depot: "",
+        details: ""
       },
       rules: {
         date1: [
@@ -97,12 +103,84 @@ export default {
       }
     };
   },
+  watch: {
+    "ruleForm.depot": {
+      handler: function() {
+        console.log("ruleForm.depot:", this.ruleForm.depot);
+        this.gettags(this.ruleForm.depot);
+      }
+    }
+  },
   methods: {
+    gettags(val) {
+      for (let i in this.app_maven) {
+        if (val == this.app_maven[i].id) {
+          this.ruleForm.address = this.app_maven[i].repo_url;
+          let _tags = this.app_maven[i].tag,
+            tagarr = [];
+          for (let j in _tags) {
+            let _obj = {
+              id: _tags[j],
+              label: _tags[j]
+            };
+            tagarr.push(_obj);
+          }
+          this.tags = tagarr;
+        }
+      }
+    },
+    focustag() {
+      if (!typeof(this.ruleForm.depot)==='Number') {
+        this.$message.error("请先选择仓库名称");
+      } else if (!this.tags.length) {
+        this.$message.error("该仓库下没有tag");
+      }
+    },
+    getapp_maven() {
+      this.$http.get("app_maven/").then(res => {
+        if (res && res.status == 200) {
+          if (res.data.status == 0) {
+            this.app_maven = res.data.results;
+          }
+        }
+      });
+    },
     submitForm(formName) {
       this.$refs[formName].validate(valid => {
         if (valid) {
-          console.log("ruleForm:", this.ruleForm);
-          alert("submit!");
+          let _parms = {
+            ips: ["127.0.0.1"],
+            module: "script",
+            hosts: ["tomcat-node1902"],
+            details: ["java_demo v6版本打包"],
+            scripts:
+              "[" +
+              this.ruleForm.scripts +
+              " " +
+              this.ruleForm.depot +
+              " " +
+              this.ruleForm.branch +
+              " " +
+              this.ruleForm.tag +
+              "]"
+          };
+          console.log("_parms:", _parms);
+          this.$http.post("app_maven/", _parms).then(res => {
+            if (res && res.status == 200) {
+              if (res.data.status == 2) {
+                // this.$message(res.data.msg);
+                this.$alert(res.data.msg, {
+                  confirmButtonText: "确定",
+                  callback: action => {
+                    this.ruleForm.depot = "";
+                    this.ruleForm.then = "";
+                    this.ruleForm.address = "";
+                    this.tags = [];
+                  }
+                });
+              }
+            }
+          });
         } else {
           console.log("error submit!!");
           return false;
@@ -112,6 +190,9 @@ export default {
     resetForm(formName) {
       this.$refs[formName].resetFields();
     }
+  },
+  created() {
+    this.getapp_maven();
   }
 };
 </script>

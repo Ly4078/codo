@@ -13,15 +13,23 @@
         </el-form-item>
         <el-form-item label="选择主机" prop="hosts">
           <el-select v-model="ruleForm.hosts" multiple clearable placeholder="请选择主机">
-            <el-option label="主机一" value="shanghai"></el-option>
-            <el-option label="主机二" value="beijing"></el-option>
+            <el-option
+              v-for="item in appDeploy"
+              :key="item.id+'appDeploy'"
+              :label="item.name"
+              :value="item.id"
+            ></el-option>
           </el-select>
         </el-form-item>
 
         <el-form-item label="选择playbook" prop="playbooks">
           <el-select v-model="ruleForm.playbooks" multiple clearable placeholder="请选择playbook">
-            <el-option label="配置文件一" value="shanghai"></el-option>
-            <el-option label="配置文件二" value="beijing"></el-option>
+            <el-option
+              v-for="item in scripts"
+              :key="item.id+'scripts'"
+              :label="item.label"
+              :value="item.id"
+            ></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="备注详情" prop="details">
@@ -41,6 +49,7 @@ export default {
   data() {
     return {
       appDeploy: [],
+      scripts: [],
       ruleForm: {
         details: "",
         hosts: [],
@@ -70,10 +79,22 @@ export default {
   methods: {
     getapp_deploy() {
       this.$http.get("app_deploy/").then(res => {
-         console.log("res:",res)
+        console.log("res:", res);
         if (res && res.status == 200) {
           if (res.data.status == 0) {
-            console.log("res:", res);
+            this.appDeploy = res.data.results;
+            let _scripts = res.data.results[0].scripts,
+              arr = [];
+            _scripts.forEach(element => {
+              let _obj = {
+                id: element,
+                label: element
+              };
+              arr.push(_obj);
+              console.log("element:", element);
+            });
+            this.scripts = arr;
+            console.log("scripts:", this.scripts);
           }
         }
       });
@@ -82,7 +103,41 @@ export default {
       this.$refs[formName].validate(valid => {
         if (valid) {
           console.log("ruleForm:", this.ruleForm);
-          alert("submit!");
+          let ips = [],
+            hosts = [],
+            _details = [],
+            _parms = {};
+          for (let i in this.ruleForm.hosts) {
+            for (let j in this.appDeploy) {
+              if (this.ruleForm.hosts[i] == this.appDeploy[j].id) {
+                ips.push(this.appDeploy[j].ip);
+                hosts.push(this.appDeploy[j].name);
+              }
+            }
+          }
+          _details = this.ruleForm.details.split(",");
+          _parms = {
+            ips: ips,
+            hosts: hosts,
+            details: _details,
+            scripts: this.ruleForm.playbooks
+          };
+          this.$http.post("app_deploy/", _parms).then(res => {
+            console.log(res);
+            if (res && res.status == 200) {
+              if (res.data.status == 2) {
+                // this.$message(res.data.msg);
+                this.$alert(res.data.msg, {
+                  confirmButtonText: "确定",
+                  callback: action => {}
+                });
+                for (let key in this.ruleForm) {
+                  this.ruleForm[key] = "";
+                }
+              }
+            }
+          });
+          console.log("_parms:", _parms);
         } else {
           console.log("error submit!!");
           return false;
@@ -110,5 +165,8 @@ export default {
       text-align: left;
     }
   }
+}
+.el-select {
+  width: 100%;
 }
 </style>

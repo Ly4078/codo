@@ -56,6 +56,8 @@ Axios.interceptors.response.use(
         return res;
       } else if (res.data.status == 0) {
         return res;
+      } else if (res.data.status == 2) {
+        return res;
       } else if (res.data.status == 1) {
         Message({
           duration: 5000,
